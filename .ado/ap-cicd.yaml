@@ -1,0 +1,29 @@
+name: ap-msvc1-cicd
+trigger:
+  branches:
+    include:
+    - main
+
+variables:
+  dockerRegistry: 'my-registry'
+  imageRepository: 'my-image'
+  imageTag: '$(Build.BuildId)'
+
+pool:
+  name: 'ado-agent-dev'
+
+stages:
+- stage: st_ci
+  displayName: st_build_test
+  jobs:
+  - job: job_ci
+    displayName: job_ci
+    steps:
+    - task: Bash@3
+      displayName: 'Hello World'
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "Hello, World!"
+          echo "Current directory contents:"
+          ls -al

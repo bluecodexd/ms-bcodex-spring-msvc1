@@ -1,0 +1,37 @@
+name: ghw-bcodex-msvc1
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - feature/*
+      - release/*
+  pull_request:
+    branches:
+      - develop
+
+  workflow_dispatch:
+    inputs:
+      deploy_option:
+        description: 'Deploy option'
+        required: true
+        type: choice
+        options:
+          - CI
+          - CI + CD
+
+permissions:
+  contents: read
+
+
+jobs:
+  job_ci:
+    runs-on: [self-hosted, dev]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate
+        run: |
+          echo "Hello World"
+          ls -al
