@@ -1,14 +1,17 @@
 # ---------- Build ----------
-FROM eclipse-temurin:21-jdk
+FROM maven:3.9-eclipse-temurin:21 AS builder
 
 WORKDIR /app
 
-COPY . .
+COPY app/pom.xml .
 
-RUN ./mvnw clean package -DskipTests
+RUN mvn -B -e dependency:go-offline
+
+COPY app/src ./src
+RUN mvn -B clean package -DskipTests
 
 # ---------- Runtime ----------
-FROM eclipse-temurin:21-jre
+FROM gcr.io/distroless/java21-debian13 AS runtime
 
 WORKDIR /app
 
@@ -24,5 +27,5 @@ USER appuser
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+CMD ["app.jar"]
 
