@@ -1,13 +1,18 @@
-package com.example.demo;
+package com.bcodex.techs;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class DemoApplication {
+public class TechApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(DemoApplication.class, args);
+
+        SpringApplication.run(
+                TechApplication.class,
+                args
+        );
+
     }
 
 }
