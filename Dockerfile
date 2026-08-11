@@ -1,5 +1,5 @@
 # ---------- Build ----------
-FROM maven:3.9-eclipse-temurin:21 AS builder
+FROM maven:3.9-eclipse-temurin-21 AS builder
 
 WORKDIR /app
 
@@ -15,15 +15,11 @@ FROM gcr.io/distroless/java21-debian13 AS runtime
 
 WORKDIR /app
 
-RUN useradd -r -u 10001 appuser && \
-    groupadd -r appgroup && \
-    usermod -aG appgroup appuser
-
 COPY --from=0 /app/target/*.jar app.jar
 
-RUN chown -R appuser:appgroup /app
+RUN chown -R nonroot:nonroot /app
 
-USER appuser
+USER nonroot
 
 EXPOSE 8080
 
