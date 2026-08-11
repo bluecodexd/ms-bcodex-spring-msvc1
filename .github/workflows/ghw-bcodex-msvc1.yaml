@@ -93,20 +93,16 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
         env:
-          DOCKER_BUILD_SUMMARY: false
+          DOCKER_BUILD_SUMMARY: true
           DOCKER_BUILD_RECORD_UPLOAD: true
       
       - name: stp-buildSummary
         run: |
           echo "Build Summary:"
-          echo "Image Name: " ${{ env.ORG }}/${{ env.APP }}
-          echo "BUILD-ImageID: ${{ steps.build.outputs.image-id }}"
-          # echo "BUILD-Metadata: ${{ steps.build.outputs.metadata }}"
+          echo "Image Name: ${{ env.ORG }}/${{ env.APP }}" 
           echo "BUILD-Digest: ${{ steps.build.outputs.digest}}"
           echo "META-Tags: ${{ steps.meta.outputs.tags }}"
           echo "META-Labels: ${{ steps.meta.outputs.labels }}"
           echo "META-Annotations: ${{ steps.meta.outputs.annotations }}"
           echo "META-Platforms: ${{ steps.meta.outputs.platforms }}"
           echo "META-Json: ${{ steps.meta.outputs.json }}"
-
-          
