@@ -15,9 +15,7 @@ FROM gcr.io/distroless/java21-debian13 AS runtime
 
 WORKDIR /app
 
-COPY --from=0 /app/target/*.jar app.jar
-
-RUN chown -R nonroot:nonroot /app
+COPY --from=0 --chown=nonroot:nonroot /app/target/*.jar app.jar
 
 USER nonroot
 
