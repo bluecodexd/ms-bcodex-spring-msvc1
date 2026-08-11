@@ -70,10 +70,12 @@ jobs:
 
       - name: stp-MvnCleanVerify
         run: |
+          cd ${{ github.workspace }}/app
           mvn -B clean verify
 
       - name: stp-sonarQube
         run: |
+          cd ${{ github.workspace }}/app
           mvn sonar:sonar \
             -Dsonar.token=${{ secrets.SONAR_TOKEN }}
         env:
