@@ -47,6 +47,7 @@ jobs:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       
+
       - name: stp-setupQEMU@v4.2.0
         uses: docker/setup-qemu-action@v4.2.0
         with:
@@ -67,6 +68,17 @@ jobs:
             type=semver,pattern={{version}},prefix=v
             type=semver,pattern={{major}}.{{minor}},prefix=v
 
+      - name: stp-MvnCleanVerify
+        run: |
+          mvn -B clean verify
+
+      - name: stp-sonarQube
+        run: |
+          mvn sonar:sonar \
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
       - name: stp-buildImage
         id: build
         uses: docker/build-push-action@v7.3.0
@@ -85,7 +97,7 @@ jobs:
           echo "Build Summary:"
           echo "Image Name: " ${{ env.ORG }}/${{ env.APP }}
           echo "BUILD-ImageID: ${{ steps.build.outputs.image-id }}"
-          echo "BUILD-Metadata: ${{ steps.build.outputs.metadata }}"
+          # echo "BUILD-Metadata: ${{ steps.build.outputs.metadata }}"
           echo "BUILD-Digest: ${{ steps.build.outputs.digest}}"
           echo "META-Tags: ${{ steps.meta.outputs.tags }}"
           echo "META-Labels: ${{ steps.meta.outputs.labels }}"
