@@ -9,9 +9,9 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.bcodex</groupId>
-	<artifactId>ms-bcodex-spring-techs</artifactId>
+	<artifactId>ms-bcodex-spring-msvc1</artifactId>
 	<version>1.0.0</version>
-	<name>ms-bcodex-spring-techs</name>
+	<name>ms-bcodex-spring-msvc1</name>
 	<description>Microservice for managing techs</description>
 	
 	<properties>
