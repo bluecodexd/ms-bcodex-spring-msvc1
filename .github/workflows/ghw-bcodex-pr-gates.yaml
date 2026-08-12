@@ -9,11 +9,11 @@ on:
       - 'app/**'
       - '.github/workflows/pr-check-sonar.yaml'
       - '.github/workflows/ghw-bcodex-msvc1.yaml'
-    branches-ignore:
-      - 'release/**'
-      - 'hotfix/**'
-      - 'feature/**'
-      - 'test/**'
+    # branches-ignore:
+    #   - 'release/**'
+    #   - 'hotfix/**'
+    #   - 'feature/**'
+    #   - 'test/**'
 
 permissions:
   contents: read
@@ -22,6 +22,7 @@ permissions:
 
 jobs:
   job_quality_gate:
+    name: Quality Gate
     runs-on: [self-hosted, runner-dev]
     steps:
       - name: stp-checkout
@@ -42,6 +43,7 @@ jobs:
             -Dsonar.token=${{ secrets.SONAR_TOKEN }}
 
   job_security_gate:
+    name: Security Gate
     runs-on: [self-hosted, runner-dev]
     steps:
       - name: stp-checkout
@@ -59,6 +61,7 @@ jobs:
             .
       
   job_container_sec_gate:
+    name: Container Security Gate
     runs-on: [self-hosted, runner-dev]
     steps:
       - name: stp-checkout
