@@ -112,7 +112,7 @@ jobs:
           trivy image \
             --severity HIGH,CRITICAL \
             --exit-code 1 \
-            ${{ vars.DOCKERHUB_USERNAME }}/${{ vars.APP }}:pr-${{ github.event.pull_request.number }}-${{ github.sha }}
+            --image ${{ steps.meta.outputs.tags }}
       
       - name: stp-generateSARIF
         if: always()
@@ -122,7 +122,7 @@ jobs:
             --output trivy-results.sarif \
             --severity HIGH,CRITICAL \
             --exit-code 0 \
-            ${{ vars.DOCKERHUB_USERNAME }}/${{ vars.APP }}:pr-${{ github.event.pull_request.number }}-${{ github.sha }}
+            --image ${{ steps.meta.outputs.tags }}
       
       - name: stp-uploadSARIF
         if: always()
