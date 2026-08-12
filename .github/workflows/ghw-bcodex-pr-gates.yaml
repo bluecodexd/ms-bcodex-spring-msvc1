@@ -89,7 +89,6 @@ jobs:
         with:
           images: ${{ vars.DOCKERHUB_USERNAME }}/${{ vars.APP }}
           tags: |
-            type=ref,event=pr
             type=sha,prefix=pr-${{ github.event.pull_request.number }}-
               
       - name: stp-buildImage
@@ -105,7 +104,7 @@ jobs:
       - name: stp-containerStructureTest
         run: |
           container-structure-test test \
-            --image ${{ vars.DOCKERHUB_USERNAME }}/${{ vars.APP }}:pr-${{ github.event.pull_request.number }}-${{ github.sha }} \
+            --image ${{ steps.meta.outputs.tags }} \
             --config tests/containers/structure-test.yaml
 
       - name: stp-trivyImageScan
