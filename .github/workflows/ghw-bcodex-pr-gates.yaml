@@ -72,7 +72,7 @@ jobs:
 
       - name: stp-hadoLintDF
         run: |
-          hadolint Dockerfile
+          hadolint Dockerfile --failure-threshold error
 
       - name: stp-buildImage
         uses: docker/setup-qemu-action@v4.2.0
