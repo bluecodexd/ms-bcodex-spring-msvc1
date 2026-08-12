@@ -112,7 +112,7 @@ jobs:
           trivy image \
             --severity HIGH,CRITICAL \
             --exit-code 1 \
-            --image ${{ steps.meta.outputs.tags }}
+            ${{ steps.meta.outputs.tags }}
       
       - name: stp-generateSARIF
         if: always()
