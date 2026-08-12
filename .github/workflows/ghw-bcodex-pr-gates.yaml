@@ -122,10 +122,10 @@ jobs:
             --output trivy-results.sarif \
             --severity HIGH,CRITICAL \
             --exit-code 0 \
-            --image ${{ steps.meta.outputs.tags }}
+            ${{ steps.meta.outputs.tags }}
       
       - name: stp-uploadSARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-results.sarif
