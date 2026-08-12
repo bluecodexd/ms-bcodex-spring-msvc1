@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ms-bcodex-spring-techs.name" . }}
+  labels:
+    {{ include "ms-bcodex-spring-techs.labels" . | nindent 4 }}
+
+spec:
+  replicas: {{ .Values.replicaCount }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+  selector:
+    matchLabels:
+      {{ include "ms-bcodex-spring-techs.selectorLabels" . | nindent 6 }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        {{ include "ms-bcodex-spring-techs.selectorLabels" . | nindent 8 }}
+    spec:
+      imagePullSecrets:
+        - name: ghcr-token
+      containers:
+        - name: {{ .Values.container.name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+           - name: http
+             containerPort: {{ .Values.container.port }}
+             protocol: TCP
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "ms-bcodex-spring-techs.name" . }}
+            - secretRef:
+                name: {{ include "ms-bcodex-spring-techs.name" . }}

@@ -1,0 +1,16 @@
+apiVersion: v2
+name: #{VAR_ENV_HELM_CHART_NAME}#
+icon: #{VAR_ENV_HELM_CHART_ICON}#
+description: #{VAR_ENV_HELM_CHART_DESCRIPTION}#
+type: #{VAR_ENV_HELM_CHART_TYPE}#
+version: #{VAR_ENV_HELM_CHART_VERSION}#  # Chart version
+appVersion: #{VAR_ENV_HELM_CHART_APP_VERSION}# # App version
+
+keywords:
+  - spring boot
+  - microservice
+  - java
+  - api
+
+maintainers:
+  - name: #{VAR_ENV_HELM_CHART_MAINTAINER}#

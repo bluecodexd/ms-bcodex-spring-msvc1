@@ -57,6 +57,12 @@
 			<version>2.14.1</version>
 		</dependency>
 
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-text</artifactId>
+			<version>1.9</version>
+		</dependency>
+
 		<!-- REST -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

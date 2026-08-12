@@ -1,0 +1,248 @@
+name: ghw-bcodex-desa-cicd-msvc1
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  
+  pull_request:
+    branches:
+      - develop
+      - main
+
+  workflow_dispatch:
+    inputs:
+      deploy_option:
+        description: 'Deploy option'
+        required: true
+        type: choice
+        options:
+          - CI
+          - CI + CD
+
+permissions:
+  contents: read
+
+jobs:
+  job_ci:
+    runs-on: [self-hosted, runner-dev]
+    steps:
+      
+      - name: stp-checkoutRepo
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ github.repository }}
+          fetch-depth: 1
+
+      - name: stp-validate
+        run: |
+          echo "Hello World"
+          ls -al
+          echo {{ github.event_name }}
+
+      - name: stp-dockerLogin
+        uses: docker/login-action@v4.6.0
+        with:
+          registry: docker.io
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      - name: stp-setupQEMU@v4.2.0
+        uses: docker/setup-qemu-action@v4.2.0
+        with:
+          platforms: all
+
+      - name: stp-setupBuildx@v4.2.0
+        uses: docker/setup-buildx-action@v4.2.0
+      
+      - name: stp-dockerMetadata
+        id: meta
+        uses: docker/metadata-action@v6.2.0
+        with:
+          images: ${{ env.ORG }}/${{ env.APP }}
+          tags: |
+            type=sha,format=short,prefix=sha-
+            type=ref,event=branch,prefix=branch-,format=refname
+            type=raw,value=latest
+            type=semver,pattern={{version}},prefix=v
+            type=semver,pattern={{major}}.{{minor}},prefix=v
+
+      - name: stp-compile&UnitTest
+        working-directory: ${{ github.workspace }}/app
+        run: |
+          mvn -B clean verify
+
+      - name: stp-sonarScan
+        working-directory: ${{ github.workspace }}/app
+        run: |
+          mvn sonar:sonar \
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+
+      - name: stp-buildImage
+        id: build
+        uses: docker/build-push-action@v7.3.0
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+        env:
+          DOCKER_BUILD_SUMMARY: true
+          DOCKER_BUILD_RECORD_UPLOAD: true
+      
+      - name: stp-trivyImageScan
+        run: |
+          trivy image \
+            --severity HIGH,CRITICAL \
+            --exit-code 1 \
+            ${{ vars.DOCKERHUB_USERNAME }}/${{ vars.APP }}:sha-${{ github.sha }}
+
+      - name: stp-generateSBOMTrivy
+        run: |
+          trivy image \
+            --format cyclonedx \
+            --output sbom.cdx.json \
+            --exit-code 0 \
+            ${{ vars.DOCKERHUB_USERNAME }}/${{ vars.APP }}:sha-${{ github.sha }}
+
+      - name: stp-uploadSBOMArtifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: sbom-${{ vars.APP }}-${{ github.sha }}
+          path: sbom.cdx.json
+
+      - name: stp-buildSummary
+        run: |
+          echo "Build Summary:"
+          echo "Image Name: ${{ env.ORG }}/${{ env.APP }}" 
+          echo "BUILD-Digest: ${{ steps.build.outputs.digest}}"
+          echo "META-Tags: ${{ steps.meta.outputs.tags }}"
+          echo "META-Labels: ${{ steps.meta.outputs.labels }}"
+          echo "META-Platforms: ${{ steps.meta.outputs.platforms }}"
+          echo "META-Json: ${{ steps.meta.outputs.json }}"
+
+      - name: stp-replaceHelmVars
+        uses: qetza/replacetokens-action@v2.0.0
+        with:
+          token-pattern: 'default'
+          sources: |
+            helm/ms-bcodex-spring-techs/*.yaml
+            helm/ms-bcodex-spring-techs/templates/*.yaml
+            helm/ms-bcodex-spring-techs/templates/_helpers.tpl
+          variables: >
+            [
+              ${{ toJSON(vars)}}
+            ]
+          
+      - name: stp-uploadArtifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: art-ms-bcodex-spring-msvc1
+          path: ${{ github.workspace }}/helm/ms-bcodex-spring-msvc1
+          
+  job_cd:
+    runs-on: [self-hosted, runner-dev]
+    needs: job_ci
+    environment: env-vars-desa
+    if: ${{ github.event.inputs.deploy_option == 'CI + CD' }}
+    steps:
+      - name: stp-validate
+        run: |
+          echo "//------------------------------------------------------- PWD -------------------------------------------------------//"
+          pwd
+          echo "//------------------------------------------------------- LS -AL -------------------------------------------------------//"
+          ls -al 
+
+      - name: stp-downloadArtifacts
+        uses: actions/download-artifact@v7
+        with:
+          name: art-ms-bcodex-spring-msvc1
+          path: ${{ github.workspace }}/helmx/ms-bcodex-spring-msvc1
+
+
+      - name: stp-validate
+        run: |
+          echo "//------------------------------------------------------- PWD -------------------------------------------------------//"
+          pwd
+          echo "//------------------------------------------------------- LS -AL -------------------------------------------------------//"
+          ls -al 
+          echo "//------------------------------------------------------- TREE -------------------------------------------------------//"
+          tree helmx
+          echo "//------------------------------------------------------- CAT CART.YAML -------------------------------------------------------//"
+          cat helmx/ms-bcodex-spring-msvc1/Chart.yaml
+          echo "//------------------------------------------------------- CAT VALUES.YAML -------------------------------------------------------//"
+          cat helmx/ms-bcodex-spring-msvc1/values-dev.yaml
+          echo "//------------------------------------------------------- CAT _HELPERS.TPL -------------------------------------------------------//"
+          cat helmx/ms-bcodex-spring-msvc1/templates/_helpers.tpl
+          echo "//------------------------------------------------------- CAT DEPLOYMENT.YAML -------------------------------------------------------//"
+          cat helmx/ms-bcodex-spring-msvc1/templates/deployment.yaml
+          echo "//------------------------------------------------------- CAT SERVICE.YAML -------------------------------------------------------//"
+          cat helmx/ms-bcodex-spring-msvc1/templates/service.yaml
+          echo "//------------------------------------------------------- CAT INGRESS.YAML -------------------------------------------------------//"
+          cat helmx/ms-bcodex-spring-msvc1/templates/ingress.yaml
+          echo "//------------------------------------------------------- CAT HPA.YAML -------------------------------------------------------//"
+          cat helmx/ms-bcodex-spring-msvc1/templates/hpa.yaml
+          echo "//------------------------------------------------------- CAT SECRET.YAML -------------------------------------------------------//"
+          cat helmx/ms-bcodex-spring-msvc1/templates/secret.yaml || true
+          echo "//------------------------------------------------------- CAT CONFIGMAP.YAML -------------------------------------------------------//"
+          cat helmx/ms-bcodex-spring-msvc1/templates/configmap.yaml || true
+
+      - name: stp-HelmLint
+        run: |
+          cd ${{ github.workspace }}
+
+          helm lint ./helmx/ms-bcodex-spring-msvc1
+
+      - name: stp-HelmRender
+        run: |
+          cd ${{ github.workspace }}
+
+          helm template techs ./helmx/ms-bcodex-spring-msvc1 \
+            --namespace VAR_ENV_HELM_NS_INSTALL \
+            --values ./helmx/ms-bcodex-spring-msvc1/values-dev.yaml \
+            --set image.tag=${{ github.sha }}
+
+      - name: stp-HelmDryRun
+        run: |
+          cd ${{ github.workspace }}
+
+          helm upgrade --install techs ./helmx/ms-bcodex-spring-msvc1 \
+            --namespace ${{ vars.VAR_ENV_HELM_NS_INSTALL }} --create-namespace \
+            --values ./helmx/ms-bcodex-spring-msvc1/values-dev.yaml \
+            --set image.tag=${{ github.sha }} \
+            --dry-run --debug
+      
+      - name: stp-HelmInstall
+        run: |
+          cd ${{ github.workspace }}
+
+          helm upgrade --install techs ./helmx/ms-bcodex-spring-msvc1 \
+            --namespace ${{ vars.VAR_ENV_HELM_NS_INSTALL }} --create-namespace \
+            --values ./helmx/ms-bcodex-spring-msvc1/values-dev.yaml \
+            --set image.tag=${{ github.sha }} \
+            --atomic \
+            --wait --timeout 5m \
+            --history-max 5
+
+      - name: stp-HelmValidatePost
+        run: |
+          cd ${{ github.workspace }}
+
+
+          echo "//------------------------------------------------------- HELM RELEASE -------------------------------------------------------//"
+          helm status techs --namespace ${{ vars.VAR_ENV_HELM_NS_INSTALL }}
+          
+          echo "//------------------------------------------------------- VALIDATE HISTORY -------------------------------------------------------//"
+          helm history techs --namespace ${{ vars.VAR_ENV_HELM_NS_INSTALL }}
+
+          echo "//------------------------------------------------------- VALIDATE RSCS -------------------------------------------------------//"
+          kubectl -n ${{ vars.VAR_ENV_HELM_NS_INSTALL }} get all -l app.kubernetes.io/name=ms-bcodex-spring-msvc1
+
+          echo "//------------------------------------------------------- VALIDATE DEPLOY-READY -------------------------------------------------------//"
+          kubectl -n ${{ vars.VAR_ENV_HELM_NS_INSTALL }} rollout status deploy/ms-bcodex-spring-msvc1 --timeout=60s
+
+
+          echo "//------------------------------------------------------- VALIDATE EVENTS -------------------------------------------------------//"
+          kubectl -n ${{ vars.VAR_ENV_HELM_NS_INSTALL }} get events --sort-by=.lastTimestamp

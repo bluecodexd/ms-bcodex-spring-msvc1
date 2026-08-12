@@ -1,0 +1,129 @@
+name: ghw-bcodex-pr-gates
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+    paths:
+      - 'app/**'
+      - '.github/workflows/pr-check-sonar.yaml'
+      - '.github/workflows/ghw-bcodex-msvc1.yaml'
+    branches-ignore:
+      - 'release/**'
+      - 'hotfix/**'
+      - 'feature/**'
+      - 'test/**'
+
+permissions:
+  contents: read
+  security-events: write
+
+
+jobs:
+  job_quality_gate:
+    runs-on: [self-hosted, runner-dev]
+    steps:
+      - name: stp-checkout
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ github.repository }}
+          fetch-depth: 1
+
+      - name: stp-compile&UnitTest
+        run: |
+          cd ${{ github.workspace }}/app
+          mvn -B clean verify
+      
+      - name: stp-sonarScan
+        working-directory: ${{ github.workspace }}/app
+        run: |
+          mvn sonar:sonar \
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+
+  job_security_gate:
+    runs-on: [self-hosted, runner-dev]
+    steps:
+      - name: stp-checkout
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ github.repository }}
+          fetch-depth: 1
+
+      - name: stp-trivyFSScan
+        run: |
+          trivy fs \
+            --scanners vuln,secret \
+            --severity HIGH,CRITICAL \
+            --exit-code 1 \
+            .
+      
+  job_container_sec_gate:
+    runs-on: [self-hosted, runner-dev]
+    steps:
+      - name: stp-checkout
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ github.repository }}
+          fetch-depth: 1
+
+      - name: stp-hadoLintDF
+        run: |
+          hadolint Dockerfile
+
+      - name: stp-buildImage
+        uses: docker/setup-qemu-action@v4.2.0
+        with:
+          platforms: all
+
+      - name: stp-buildx
+        uses: docker/setup-buildx-action@v4.2.0
+
+
+      - name: stp-dockerMetadata
+        id: meta
+        uses: docker/metadata-action@v6.2.0
+        with:
+          images: ${{ vars.DOCKERHUB_USERNAME }}/${{ vars.APP }}
+          tags: |
+            type=ref,event=pr
+            type=sha,prefix=pr-${{ github.event.pull_request.number }}-
+              
+      - name: stp-buildImage
+        uses: docker/build-push-action@v7.3.0
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          load: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: stp-containerStructureTest
+        run: |
+          container-structure-test test \
+            --image ${{ vars.DOCKERHUB_USERNAME }}/${{ vars.APP }}:pr-${{ github.event.pull_request.number }}-${{ github.sha }} \
+            --config tests/containers/structure-test.yaml
+
+      - name: stp-trivyImageScan
+        run: |
+          trivy image \
+            --severity HIGH,CRITICAL \
+            --exit-code 1 \
+            ${{ vars.DOCKERHUB_USERNAME }}/${{ vars.APP }}:pr-${{ github.event.pull_request.number }}-${{ github.sha }}
+      
+      - name: stp-generateSARIF
+        if: always()
+        run: |
+          trivy image \
+            --format sarif \
+            --output trivy-results.sarif \
+            --severity HIGH,CRITICAL \
+            --exit-code 0 \
+            ${{ vars.DOCKERHUB_USERNAME }}/${{ vars.APP }}:pr-${{ github.event.pull_request.number }}-${{ github.sha }}
+      
+      - name: stp-uploadSARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
