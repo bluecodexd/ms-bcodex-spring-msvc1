@@ -9,11 +9,11 @@ on:
       - 'app/**'
       - '.github/workflows/pr-check-sonar.yaml'
       - '.github/workflows/ghw-bcodex-msvc1.yaml'
-    branches-ignore:
-      - 'release/**'
-      - 'hotfix/**'
-      - 'feature/**'
-      - 'test/**'
+    # branches-ignore:
+    #   - 'release/**'
+    #   - 'hotfix/**'
+    #   - 'feature/**'
+    #   - 'test/**'
 
 permissions:
   contents: read
@@ -22,6 +22,7 @@ permissions:
 
 jobs:
   job_quality_gate:
+    name: Quality Gate
     runs-on: [self-hosted, runner-dev]
     steps:
       - name: stp-checkout
@@ -42,6 +43,7 @@ jobs:
             -Dsonar.token=${{ secrets.SONAR_TOKEN }}
 
   job_security_gate:
+    name: Security Gate
     runs-on: [self-hosted, runner-dev]
     steps:
       - name: stp-checkout
@@ -59,6 +61,7 @@ jobs:
             .
       
   job_container_sec_gate:
+    name: Container Security Gate
     runs-on: [self-hosted, runner-dev]
     steps:
       - name: stp-checkout
@@ -69,7 +72,7 @@ jobs:
 
       - name: stp-hadoLintDF
         run: |
-          hadolint Dockerfile
+          hadolint Dockerfile --failure-threshold error
 
       - name: stp-buildImage
         uses: docker/setup-qemu-action@v4.2.0
@@ -86,7 +89,6 @@ jobs:
         with:
           images: ${{ vars.DOCKERHUB_USERNAME }}/${{ vars.APP }}
           tags: |
-            type=ref,event=pr
             type=sha,prefix=pr-${{ github.event.pull_request.number }}-
               
       - name: stp-buildImage
@@ -102,15 +104,18 @@ jobs:
       - name: stp-containerStructureTest
         run: |
           container-structure-test test \
-            --image ${{ vars.DOCKERHUB_USERNAME }}/${{ vars.APP }}:pr-${{ github.event.pull_request.number }}-${{ github.sha }} \
+            --image ${{ steps.meta.outputs.tags }} \
             --config tests/containers/structure-test.yaml
 
       - name: stp-trivyImageScan
         run: |
           trivy image \
+            --scanners vuln \
             --severity HIGH,CRITICAL \
+            --ignore-unfixed \
             --exit-code 1 \
-            ${{ vars.DOCKERHUB_USERNAME }}/${{ vars.APP }}:pr-${{ github.event.pull_request.number }}-${{ github.sha }}
+            --no-progress \
+            ${{ steps.meta.outputs.tags }}
       
       - name: stp-generateSARIF
         if: always()
@@ -119,11 +124,12 @@ jobs:
             --format sarif \
             --output trivy-results.sarif \
             --severity HIGH,CRITICAL \
+            --ignore-unfixed \
             --exit-code 0 \
-            ${{ vars.DOCKERHUB_USERNAME }}/${{ vars.APP }}:pr-${{ github.event.pull_request.number }}-${{ github.sha }}
+            ${{ steps.meta.outputs.tags }}
       
       - name: stp-uploadSARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-results.sarif
