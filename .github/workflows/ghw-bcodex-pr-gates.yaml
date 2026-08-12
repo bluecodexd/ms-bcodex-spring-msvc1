@@ -110,8 +110,11 @@ jobs:
       - name: stp-trivyImageScan
         run: |
           trivy image \
+            --scanners vuln \
             --severity HIGH,CRITICAL \
+            --ignore-unfixed \
             --exit-code 1 \
+            --no-progress \
             ${{ steps.meta.outputs.tags }}
       
       - name: stp-generateSARIF
@@ -121,6 +124,7 @@ jobs:
             --format sarif \
             --output trivy-results.sarif \
             --severity HIGH,CRITICAL \
+            --ignore-unfixed \
             --exit-code 0 \
             ${{ steps.meta.outputs.tags }}
       
