@@ -15,15 +15,9 @@ FROM gcr.io/distroless/java21-debian13 AS runtime
 
 WORKDIR /app
 
-RUN useradd -r -u 10001 appuser && \
-    groupadd -r appgroup && \
-    usermod -aG appgroup appuser
+COPY --from=0 --chown=nonroot:nonroot /app/target/*.jar app.jar
 
-COPY --from=0 /app/target/*.jar app.jar
-
-RUN chown -R appuser:appgroup /app
-
-USER appuser
+USER nonroot
 
 EXPOSE 8080
 

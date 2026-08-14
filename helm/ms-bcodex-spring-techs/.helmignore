@@ -1,0 +1,40 @@
+# VCS
+.git/
+.github/
+.gitignore
+.gitattributes
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+target/
+*.log
+
+# Docs
+README.md
+LICENSE
+
+# Tests
+tests/
+
+# Temp
+*.tmp
+*.swp
+
+# Archives
+*.tgz
+
+# Values locales (si existen)
+values-local.yaml
+values-*.local.yaml
+
+# CI
+Dockerfile
+docker-compose.yaml

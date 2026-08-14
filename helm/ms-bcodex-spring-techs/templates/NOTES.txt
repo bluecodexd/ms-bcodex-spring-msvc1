@@ -1,0 +1,11 @@
+1. Application:
+    http://{{ .Values.ingress.host }}:{{ .Values.ingress.path }}
+
+2. Service:
+    kubectl get svc -n {{ .Release.Namespace }}
+
+3. Pods:
+    kubectl get pods -n {{ .Release.Namespace }}
+
+4. Logs:
+    kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/name={{ include "ms-bcodex-spring-techs.name" .}}
