@@ -3,6 +3,9 @@ name: ghw-bcodex-test-arc
 on:
  workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   job1:
     runs-on: arc-runner-dev
@@ -80,7 +83,7 @@ jobs:
     runs-on: arc-runner-dev
     steps:
       - uses: actions/checkout@v7
-      
+
       - name: stp-scripjob5
         run: |
           echo "Running job 5"
