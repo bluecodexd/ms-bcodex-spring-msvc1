@@ -1,0 +1,95 @@
+name: ghw-bcodex-test-arc
+
+on:
+ workflow_dispatch:
+
+jobs:
+  job1:
+    runs-on: arc-runner-dev
+    steps:
+      - uses: actions/checkout@v7
+    
+      - name: stp-scripjob1
+        run: |
+          echo "Running job 1"
+
+      - name: stp-buildImageTest
+        run: |
+          cat > Dockerfile <<EOF
+          FROM alpine:3.18
+          CMD ["echo", "Hello from Dockerfile"]
+          EOF
+
+          docker build -t image1:latest .
+
+  job2:
+    runs-on: arc-runner-dev
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: stp-scripjob2
+        run: |
+          echo "Running job 2"
+
+      - name: stp-buildImageTest
+        run: |
+          cat > Dockerfile <<EOF
+          FROM alpine:3.18
+          CMD ["echo", "Hello from Dockerfile"]
+          EOF
+
+          docker build -t image2:latest .
+
+  job3:
+    runs-on: arc-runner-dev
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: stp-scripjob3
+        run: |
+          echo "Running job 3"
+
+      - name: stp-buildImageTest
+        run: |
+          cat > Dockerfile <<EOF
+          FROM alpine:3.18
+          CMD ["echo", "Hello from Dockerfile"]
+          EOF
+
+          docker build -t image1:latest .
+          
+  job4:
+    runs-on: arc-runner-dev
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: stp-scripjob4
+        run: |
+          echo "Running job 4"
+
+      - name: stp-buildImageTest
+        run: |
+          cat > Dockerfile <<EOF
+          FROM alpine:3.18
+          CMD ["echo", "Hello from Dockerfile"]
+          EOF
+
+          docker build -t image1:latest .
+
+  job5:
+    runs-on: arc-runner-dev
+    steps:
+      - uses: actions/checkout@v7
+      
+      - name: stp-scripjob5
+        run: |
+          echo "Running job 5"
+
+      - name: stp-buildImageTest
+        run: |
+          cat > Dockerfile <<EOF
+          FROM alpine:3.18
+          CMD ["echo", "Hello from Dockerfile"]
+          EOF
+
+          docker build -t image1:latest .
